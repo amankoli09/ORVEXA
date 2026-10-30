@@ -1,3 +1,5 @@
+<img width="1672" height="941" alt="orvexa" src="https://github.com/user-attachments/assets/6c02c606-e046-4228-8106-e4dfac227cff" />
+
 # ORVEXA — Conversational AI Study & Revision Gap Assistant
 
 <div align="center">
