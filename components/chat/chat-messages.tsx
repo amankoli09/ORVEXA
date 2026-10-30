@@ -56,7 +56,7 @@ export function ChatMessages({ messages, pending = false }: ChatMessagesProps) {
               <MessageAvatar className="size-8 rounded-full border border-neutral-200 bg-white shadow-2xs overflow-hidden">
                 <img
                   src="/logo.png"
-                  alt="AI Revision Gap Analyzer"
+                  alt="ORVEXA"
                   className="size-full object-contain p-0.5"
                 />
               </MessageAvatar>
@@ -68,7 +68,7 @@ export function ChatMessages({ messages, pending = false }: ChatMessagesProps) {
 
             <MessageContent className="gap-2 max-w-full">
               <MessageHeader className="text-xs text-neutral-400 font-medium">
-                <span>{message.from === "assistant" ? "Revision Gap Assistant" : "You"}</span>
+                <span>{message.from === "assistant" ? "ORVEXA" : "You"}</span>
                 <span>{message.timestamp}</span>
               </MessageHeader>
 
@@ -148,13 +148,13 @@ export function ChatMessages({ messages, pending = false }: ChatMessagesProps) {
             <MessageAvatar className="size-8 rounded-full border border-neutral-200 bg-white shadow-2xs overflow-hidden">
               <img
                 src="/logo.png"
-                alt="AI Revision Gap Analyzer"
+                alt="ORVEXA"
                 className="size-full object-contain p-0.5"
               />
             </MessageAvatar>
             <MessageContent>
               <MessageHeader className="text-xs text-neutral-400 font-medium">
-                <span>Revision Gap Assistant</span>
+                <span>ORVEXA</span>
                 <span>Thinking</span>
               </MessageHeader>
               <div className="rounded-xl border border-neutral-200/70 bg-neutral-50/70 p-3">

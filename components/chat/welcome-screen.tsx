@@ -68,7 +68,7 @@ export function WelcomeScreen({ onSelectPrompt }: WelcomeScreenProps) {
         >
           <img
             src="/logo.png"
-            alt="AI Revision Gap Analyzer Logo"
+            alt="ORVEXA Logo"
             className="size-9 object-contain"
           />
         </motion.div>

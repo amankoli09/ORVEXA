@@ -14,12 +14,12 @@ export function ChatHeader({ onReset, hasMessages }: ChatHeaderProps) {
       <div className="flex min-w-0 items-center gap-2.5">
         <img
           src="/logo.png"
-          alt="AI Revision Gap Analyzer Logo"
+          alt="ORVEXA Logo"
           className="size-7 shrink-0 rounded-lg object-contain"
         />
         <div className="flex min-w-0 flex-col">
           <h1 className="truncate text-[13px] font-medium tracking-tight text-neutral-900 sm:text-sm">
-            AI Revision Gap Analyzer
+            ORVEXA
           </h1>
           <p className="truncate text-[11px] text-neutral-500">
             Diagnose gaps · Revise smarter
