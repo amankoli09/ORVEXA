@@ -1,4 +1,4 @@
-import { ChatLayout } from "@/components/chat/chat-layout";
+import { ChatLayoutDynamic } from "@/components/chat/chat-layout-dynamic";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function ChatPage() {
   return (
     <main className="h-screen w-full bg-white">
-      <ChatLayout />
+      <ChatLayoutDynamic />
     </main>
   );
 }
