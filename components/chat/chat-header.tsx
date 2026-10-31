@@ -1,6 +1,7 @@
 "use client";
 
-import { RotateCcw } from "lucide-react";
+import Link from "next/link";
+import { RotateCcw, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ChatHeaderProps {
@@ -11,7 +12,10 @@ interface ChatHeaderProps {
 export function ChatHeader({ onReset, hasMessages }: ChatHeaderProps) {
   return (
     <header className="sticky top-0 z-20 flex h-16 w-full shrink-0 items-center justify-between gap-4 border-b border-black/[0.06] bg-white/55 px-4 backdrop-blur-xl sm:px-6">
-      <div className="flex min-w-0 items-center gap-2.5">
+      <Link
+        href="/"
+        className="flex min-w-0 items-center gap-2.5 transition-opacity hover:opacity-85"
+      >
         <img
           src="/logo.png"
           alt="ORVEXA Logo"
@@ -25,9 +29,17 @@ export function ChatHeader({ onReset, hasMessages }: ChatHeaderProps) {
             Diagnose gaps · Revise smarter
           </p>
         </div>
-      </div>
+      </Link>
 
       <div className="flex shrink-0 items-center gap-2">
+        <Link
+          href="/"
+          className="flex h-8 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-black/[0.04] hover:text-neutral-900"
+        >
+          <Home className="size-3.5" />
+          <span className="hidden sm:inline">Landing</span>
+        </Link>
+
         {hasMessages && (
           <Button
             type="button"
