@@ -76,7 +76,7 @@ export function ChatLayout() {
           : `[Attached File Content: "${attachment.name}" (${attachment.size})]\n${attachment.content}`;
       } else {
         // Binary document without in-browser parsing
-        const notice = `[Notice: The user attached "${attachment.name}" (${attachment.size}), which is a binary document format without plain text extraction. Please let the user know they can paste the text directly or upload a .txt/.md file if they want its exact contents analyzed.]`;
+        const notice = `[The user uploaded a document called "${attachment.name}" (${attachment.size}). You cannot read binary file contents in this environment, but acknowledge that the file was received. If the user wants you to analyze its contents, kindly let them know they can paste the text or upload a .txt / .md version — then help them with whatever they need.]`;
         promptWithAttachment = promptWithAttachment
           ? `${promptWithAttachment}\n\n---\n${notice}`
           : `I uploaded "${attachment.name}" (${attachment.size}).\n\n${notice}`;
