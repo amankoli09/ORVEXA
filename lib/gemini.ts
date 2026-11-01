@@ -12,9 +12,37 @@ export interface SendMessageOptions {
 
 const DEFAULT_MODEL = "gemini-3.5-flash-lite";
 
+/**
+ * Collects all configured API keys in priority order.
+ *
+ * Supported env vars (checked in order):
+ *   NEXT_PUBLIC_GEMINI_API_KEY_1, _2, _3 … _10   (numbered slots)
+ *   NEXT_PUBLIC_GEMINI_API_KEY                     (legacy single key, always last)
+ *
+ * Paste each backup key into a new numbered variable in .env.local:
+ *   NEXT_PUBLIC_GEMINI_API_KEY_1=AIza...
+ *   NEXT_PUBLIC_GEMINI_API_KEY_2=AIza...
+ */
+export function getGeminiApiKeys(): string[] {
+  const keys: string[] = [];
+
+  // Numbered slots 1–10
+  for (let i = 1; i <= 10; i++) {
+    const k = (process.env[`NEXT_PUBLIC_GEMINI_API_KEY_${i}`] ?? "").trim();
+    if (k) keys.push(k);
+  }
+
+  // Legacy single key (added last so numbered keys have higher priority)
+  const legacy = (process.env.NEXT_PUBLIC_GEMINI_API_KEY ?? "").trim();
+  if (legacy && !keys.includes(legacy)) keys.push(legacy);
+
+  return keys;
+}
+
 export function getGeminiConfig() {
-  const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY?.trim() || "";
-  const model = process.env.NEXT_PUBLIC_GEMINI_MODEL?.trim() || DEFAULT_MODEL;
+  const keys = getGeminiApiKeys();
+  const apiKey = keys[0] ?? "";
+  const model = (process.env.NEXT_PUBLIC_GEMINI_MODEL ?? "").trim() || DEFAULT_MODEL;
   return { apiKey, model };
 }
 
@@ -60,11 +88,12 @@ export async function callGeminiApi({
   mode,
   signal,
 }: SendMessageOptions): Promise<string> {
-  const { apiKey, model } = getGeminiConfig();
+  const keys = getGeminiApiKeys();
+  const model = (process.env.NEXT_PUBLIC_GEMINI_MODEL ?? "").trim() || DEFAULT_MODEL;
 
-  if (!apiKey) {
+  if (keys.length === 0) {
     throw new Error(
-      "Gemini API key is not configured. Please add your Google AI Studio API key to NEXT_PUBLIC_GEMINI_API_KEY in .env.local and restart the development server."
+      "No Gemini API key configured. Add NEXT_PUBLIC_GEMINI_API_KEY_1 (and optionally _2, _3…) to .env.local and restart the server."
     );
   }
 
@@ -108,63 +137,86 @@ export async function callGeminiApi({
     });
   }
 
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
-    model
-  )}:generateContent?key=${encodeURIComponent(apiKey)}`;
-
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
+  const requestBody = JSON.stringify({
+    systemInstruction: {
+      parts: [{ text: systemInstruction }],
     },
-    body: JSON.stringify({
-      systemInstruction: {
-        parts: [{ text: systemInstruction }],
-      },
-      contents,
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 2048,
-      },
-    }),
-    signal,
+    contents,
+    generationConfig: {
+      temperature: 0.7,
+      maxOutputTokens: 2048,
+    },
   });
 
-  if (!response.ok) {
+  // --- Key rotation: try each key in order, skip to next on 429/403 ---
+  let lastError: Error | null = null;
+
+  for (let i = 0; i < keys.length; i++) {
+    const apiKey = keys[i];
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
+      model
+    )}:generateContent?key=${encodeURIComponent(apiKey)}`;
+
+    let response: Response;
+    try {
+      response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: requestBody,
+        signal,
+      });
+    } catch (fetchErr) {
+      // Network error or aborted — don't try other keys for abort
+      throw fetchErr;
+    }
+
+    if (response.ok) {
+      const data = await response.json();
+      const candidate = data?.candidates?.[0];
+      const text = candidate?.content?.parts?.[0]?.text;
+
+      if (!text) {
+        if (candidate?.finishReason === "SAFETY") {
+          throw new Error(
+            "The response was flagged by Gemini safety filters. Please adjust your query."
+          );
+        }
+        throw new Error("Received an empty response from Gemini API.");
+      }
+
+      return text;
+    }
+
+    // Parse error from this key
     const errorJson = await response.json().catch(() => null);
     const apiMessage = errorJson?.error?.message;
 
+    if (response.status === 429 || response.status === 403) {
+      // Rate-limited or unauthorized — try the next key
+      const label = i + 1 < keys.length ? `trying key ${i + 2}…` : "no more keys available.";
+      lastError = new Error(
+        response.status === 429
+          ? `Key ${i + 1} rate-limited (429). ${label}`
+          : `Key ${i + 1} unauthorized (403). ${label}`
+      );
+      continue; // rotate to next key
+    }
+
     if (response.status === 400 && apiMessage) {
       throw new Error(`Gemini API Error (400): ${apiMessage}`);
-    } else if (response.status === 403) {
-      throw new Error(
-        "Invalid or unauthorized Gemini API key. Please verify your Google AI Studio API key in .env.local and restart the server."
-      );
-    } else if (response.status === 429) {
-      throw new Error(
-        "Gemini API rate limit exceeded. Please wait a moment before trying again."
-      );
-    } else {
-      throw new Error(
-        apiMessage ||
-          `Gemini API request failed with status ${response.status} (${response.statusText}).`
-      );
     }
+
+    throw new Error(
+      apiMessage ||
+        `Gemini API request failed with status ${response.status} (${response.statusText}).`
+    );
   }
 
-  const data = await response.json();
-  const candidate = data?.candidates?.[0];
-  const text = candidate?.content?.parts?.[0]?.text;
-
-  if (!text) {
-    if (candidate?.finishReason === "SAFETY") {
-      throw new Error(
-        "The response was flagged by Gemini safety filters. Please adjust your query."
-      );
-    }
-    throw new Error("Received an empty response from Gemini API.");
-  }
-
-  return text;
+  // All keys exhausted
+  throw new Error(
+    lastError?.message.includes("429")
+      ? `All ${keys.length} Gemini API key(s) have hit their rate limits. Please wait a moment and try again, or add more backup keys.`
+      : `All ${keys.length} Gemini API key(s) failed. ${lastError?.message ?? ""}`
+  );
 }
 
