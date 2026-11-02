@@ -1,35 +1,48 @@
 "use client";
 
 import Link from "next/link";
-import { RotateCcw, Home } from "lucide-react";
+import { RotateCcw, Home, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ChatHeaderProps {
   onReset: () => void;
   hasMessages: boolean;
+  onToggleHistory: () => void;
 }
 
-export function ChatHeader({ onReset, hasMessages }: ChatHeaderProps) {
+export function ChatHeader({ onReset, hasMessages, onToggleHistory }: ChatHeaderProps) {
   return (
     <header className="sticky top-0 z-20 flex h-16 w-full shrink-0 items-center justify-between gap-4 border-b border-black/[0.06] bg-white/55 px-4 backdrop-blur-xl sm:px-6">
-      <Link
-        href="/"
-        className="flex min-w-0 items-center gap-2.5 transition-opacity hover:opacity-85"
-      >
-        <img
-          src="/logo.png"
-          alt="ORVEXA Logo"
-          className="size-7 shrink-0 rounded-lg object-contain"
-        />
-        <div className="flex min-w-0 flex-col">
-          <h1 className="truncate text-[13px] font-medium tracking-tight text-neutral-900 sm:text-sm">
-            ORVEXA
-          </h1>
-          <p className="truncate text-[11px] text-neutral-500">
-            Diagnose gaps · Revise smarter
-          </p>
-        </div>
-      </Link>
+      <div className="flex items-center gap-2">
+        {/* History toggle */}
+        <button
+          onClick={onToggleHistory}
+          className="flex h-8 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-black/[0.04] hover:text-neutral-900"
+          aria-label="Toggle chat history"
+        >
+          <History className="size-3.5" />
+          <span className="hidden sm:inline">History</span>
+        </button>
+
+        <Link
+          href="/"
+          className="flex min-w-0 items-center gap-2.5 transition-opacity hover:opacity-85"
+        >
+          <img
+            src="/logo.png"
+            alt="ORVEXA Logo"
+            className="size-7 shrink-0 rounded-lg object-contain"
+          />
+          <div className="flex min-w-0 flex-col">
+            <h1 className="truncate text-[13px] font-medium tracking-tight text-neutral-900 sm:text-sm">
+              ORVEXA
+            </h1>
+            <p className="truncate text-[11px] text-neutral-500">
+              Diagnose gaps · Revise smarter
+            </p>
+          </div>
+        </Link>
+      </div>
 
       <div className="flex shrink-0 items-center gap-2">
         <Link

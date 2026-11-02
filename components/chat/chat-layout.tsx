@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { ChatHeader } from "@/components/chat/chat-header";
 import { WelcomeScreen } from "@/components/chat/welcome-screen";
 import {
@@ -11,14 +11,27 @@ import {
   MessageComposer,
   type AttachedFile,
 } from "@/components/chat/message-composer";
+import { HistoryPanel } from "@/components/chat/history-panel";
 import { MessageScroller } from "@/components/agents/message-scroller";
 import { callGeminiApi } from "@/lib/gemini";
+import { useChatHistory, type ChatSession } from "@/hooks/use-chat-history";
 
 export function ChatLayout() {
   const [messages, setMessages] = useState<ChatMessageItem[]>([]);
   const [pending, setPending] = useState(false);
   const [prefilledInput, setPrefilledInput] = useState("");
+  const [historyOpen, setHistoryOpen] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const sessionIdRef = useRef<string>("");
+
+  const { sessions, saveSession, deleteSession, clearAll } = useChatHistory();
+
+  // Auto-save session whenever messages change
+  useEffect(() => {
+    if (messages.length === 0) return;
+    const id = saveSession(messages, sessionIdRef.current || undefined);
+    if (id) sessionIdRef.current = id;
+  }, [messages, saveSession]);
 
   const handleReset = useCallback(() => {
     if (abortControllerRef.current) {
@@ -28,6 +41,7 @@ export function ChatLayout() {
     setMessages([]);
     setPending(false);
     setPrefilledInput("");
+    sessionIdRef.current = "";
   }, []);
 
   const handleStop = useCallback(() => {
@@ -36,6 +50,17 @@ export function ChatLayout() {
       abortControllerRef.current = null;
     }
     setPending(false);
+  }, []);
+
+  /** Load a past session back into the chat */
+  const handleLoadSession = useCallback((session: ChatSession) => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setPending(false);
+    sessionIdRef.current = session.id;
+    setMessages(session.messages);
   }, []);
 
   const handleSendMessage = async (
@@ -138,34 +163,50 @@ export function ChatLayout() {
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="flex h-screen w-full flex-col bg-white text-neutral-900 overflow-hidden font-sans antialiased">
-      {/* Centered clean header */}
-      <ChatHeader onReset={handleReset} hasMessages={hasMessages} />
-
-      {/* Main chat viewport */}
-      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-        {hasMessages ? (
-          <MessageScroller
-            className="min-h-0 flex-1"
-            viewportClassName="px-4 py-6 sm:px-6"
-            contentClassName="mx-auto w-full max-w-3xl"
-          >
-            <ChatMessages messages={messages} pending={pending} />
-          </MessageScroller>
-        ) : (
-          <div className="flex-1 overflow-y-auto">
-            <WelcomeScreen onSelectPrompt={handleSelectPrompt} />
-          </div>
-        )}
-      </div>
-
-      {/* Centered bottom Message Composer */}
-      <MessageComposer
-        onSendMessage={handleSendMessage}
-        loading={pending}
-        onStop={handleStop}
-        prefilledValue={prefilledInput}
+    <>
+      {/* History slide-in panel */}
+      <HistoryPanel
+        sessions={sessions}
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        onLoadSession={handleLoadSession}
+        onDeleteSession={deleteSession}
+        onClearAll={clearAll}
       />
-    </div>
+
+      <div className="flex h-screen w-full flex-col bg-white text-neutral-900 overflow-hidden font-sans antialiased">
+        {/* Header */}
+        <ChatHeader
+          onReset={handleReset}
+          hasMessages={hasMessages}
+          onToggleHistory={() => setHistoryOpen((v) => !v)}
+        />
+
+        {/* Main chat viewport */}
+        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+          {hasMessages ? (
+            <MessageScroller
+              className="min-h-0 flex-1"
+              viewportClassName="px-4 py-6 sm:px-6"
+              contentClassName="mx-auto w-full max-w-3xl"
+            >
+              <ChatMessages messages={messages} pending={pending} />
+            </MessageScroller>
+          ) : (
+            <div className="flex-1 overflow-y-auto">
+              <WelcomeScreen onSelectPrompt={handleSelectPrompt} />
+            </div>
+          )}
+        </div>
+
+        {/* Centered bottom Message Composer */}
+        <MessageComposer
+          onSendMessage={handleSendMessage}
+          loading={pending}
+          onStop={handleStop}
+          prefilledValue={prefilledInput}
+        />
+      </div>
+    </>
   );
 }

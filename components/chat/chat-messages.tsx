@@ -26,6 +26,7 @@ import {
   type GapDiagnosticData,
 } from "@/components/chat/gap-analyzer-card";
 import type { AttachedFile } from "@/components/chat/message-composer";
+import { MarkdownMessage } from "@/components/chat/markdown-message";
 
 export interface ChatMessageItem {
   id: string;
@@ -115,8 +116,8 @@ export function ChatMessages({ messages, pending = false }: ChatMessagesProps) {
                     showActions={!message.streaming}
                     copyText={message.content}
                   >
-                    <div className="space-y-3 whitespace-pre-wrap">
-                      {message.content}
+                    <div className="space-y-2">
+                      <MarkdownMessage content={message.content} />
                     </div>
                   </StreamingResponse>
                 </div>

@@ -11,3 +11,4 @@ const ChatLayout = dynamic(
 export function ChatLayoutDynamic() {
   return <ChatLayout />;
 }
+
